@@ -72,9 +72,39 @@ const Login = () => {
 
               <button className="btn btn-block py3">LOGIN</button>
 
-              <Link to="/users/signup" className="float-right mt-3">
-                NEW USER?
-              </Link>
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <Link to="/users/signup">
+                  NEW USER?
+                </Link>
+              </div>
+
+              <div className="mt-4 pt-3 border-top text-center">
+                <p className="mb-2 text-muted" style={{ fontSize: "0.85rem", letterSpacing: "0.5px" }}>
+                  <strong>QUICK AUTOFILL DEMO</strong>
+                </p>
+                <div className="d-flex justify-content-center">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-info mr-3"
+                    onClick={() => {
+                      setEmail("test@user.com");
+                      setPassword("test123");
+                    }}
+                  >
+                    👤 User Demo
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger"
+                    onClick={() => {
+                      setEmail("test@admin.com");
+                      setPassword("test123");
+                    }}
+                  >
+                    🛠️ Admin Demo
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
