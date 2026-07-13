@@ -7,7 +7,6 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        // target: "https://internship-b7.onrender.com",
         target: "https://ai-powered-food-app.onrender.com",
         changeOrigin: true,
         secure: false,
@@ -15,6 +14,7 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: "build",
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
