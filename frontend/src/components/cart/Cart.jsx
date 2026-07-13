@@ -10,16 +10,25 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faIndianRupee } from "@fortawesome/free-solid-svg-icons";
 import { payment } from "../../redux/actions/orderActions";
 import { toast } from "react-toastify"; 
+import { clearErrors } from "../../redux/slices/orderSlice";
 
 const Cart = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { cartItems, restaurant } = useSelector((state) => state.cart);
+  const { error: orderError } = useSelector((state) => state.order);
 
   useEffect(() => {
     dispatch(fetchCartItems());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (orderError) {
+      toast.error(orderError);
+      dispatch(clearErrors());
+    }
+  }, [orderError, dispatch]);
 
   const removeCartItemHandler = (id) => {
     dispatch(removeItemFromCart(id));

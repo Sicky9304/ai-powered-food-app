@@ -10,17 +10,34 @@ exports.processPayment = catchAsyncErrors(async (req, res, next) => {
     phone_number_collection: {
       enabled: true,
     },
-    line_items: req.body.items.map((item) => ({
-      price_data: {
-        currency: "inr",
-        product_data: {
-          name: item.foodItem.name,
-          images: [item.foodItem.images[0].url],
+    line_items: req.body.items.map((item) => {
+      const lineItem = {
+        price_data: {
+          currency: "inr",
+          product_data: {
+            name: item.foodItem.name,
+          },
+          unit_amount: item.foodItem.price * 100,
         },
-        unit_amount: item.foodItem.price * 100,
-      },
-      quantity: item.quantity,
-    })),
+        quantity: item.quantity,
+      };
+
+      if (
+        item.foodItem.images &&
+        item.foodItem.images.length > 0 &&
+        item.foodItem.images[0].url
+      ) {
+        const imageUrl = item.foodItem.images[0].url;
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+          lineItem.price_data.product_data.images = [imageUrl];
+        } else if (imageUrl.startsWith("/")) {
+          const origin = req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173";
+          lineItem.price_data.product_data.images = [`${origin.replace(/\/$/, "")}${imageUrl}`];
+        }
+      }
+
+      return lineItem;
+    }),
     mode: "payment",
     shipping_address_collection: {
       allowed_countries: ["US", "IN"],

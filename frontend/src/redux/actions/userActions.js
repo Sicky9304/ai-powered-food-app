@@ -14,6 +14,8 @@ import {
   updateReset,
   clearErrors,
 } from "../slices/userSlice";
+import { fetchCartItems } from "./cartActions";
+import { clearCart } from "../slices/cartSlice";
 
 // LOGIN
 
@@ -25,6 +27,7 @@ export const login = (email, password) => async (dispatch) => {
       password,
     });
     dispatch(loginSuccess(data.data.user));
+    dispatch(fetchCartItems());
   } catch (error) {
     dispatch(loginFail(error.response?.data?.message || "login Failed "));
   }
@@ -39,6 +42,7 @@ export const register = (userData) => async (dispatch) => {
       headers: { "Content-Type": "application/json" },
     });
     dispatch(loginSuccess(data.data.user));
+    dispatch(fetchCartItems());
   } catch (error) {
     dispatch(loginFail(error.response?.data?.message));
   }
@@ -46,23 +50,13 @@ export const register = (userData) => async (dispatch) => {
 
 //load user
 export const loadUser = () => async (dispatch) => {
-  // try{
-  //     dispatch(loginRequest())
-
-  //     const {data} = await api.get("/v1/users/me")
-
-  //     dispatch(loginSuccess(data.user))
-
-  // }catch(error){
-  //     dispatch(loadUserFail(error.response?.data?.message))
-  // }
-
   try {
     dispatch(loginRequest());
 
     const { data } = await api.get("/v1/users/me");
 
     dispatch(loginSuccess(data.user));
+    dispatch(fetchCartItems());
   } catch (error) {
     dispatch(loadUserFail(error.response?.data?.message));
   }
@@ -88,6 +82,7 @@ export const logout = () => async (dispatch) => {
   try {
     await api.get("/v1/users/logout");
     dispatch(logoutSuccess());
+    dispatch(clearCart());
   } catch (error) {
     dispatch(logoutFail(error.response?.data?.message));
   }
