@@ -1,7 +1,7 @@
 const Order = require("../models/order");
 const FoodItem = require("../models/foodItem");
 const Cart = require("../models/cartModel");
-const { ObjectId } = require("mongodb");
+const mongoose = require("mongoose");
 const ErrorHandler = require("../utils/errorHandler");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const dotenv = require("dotenv");
@@ -91,7 +91,7 @@ exports.getSingleOrder = catchAsyncErrors(async (req, res, next) => {
 // Get logged in user orders   =>   /api/v1/orders/me
 exports.myOrders = catchAsyncErrors(async (req, res, next) => {
   // Get the user ID from req.user
-  const userId = new ObjectId(req.user.id);
+  const userId = new mongoose.Types.ObjectId(req.user.id);
   // Find orders for the specific user using the retrieved user ID
   const orders = await Order.find({ user: userId })
     .populate("user", "name email")
