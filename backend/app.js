@@ -63,6 +63,14 @@ app.use("/api/v1/ai", aiRoutes);
 
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
+
+// Root route to check API status
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "API is working successfully.",
+  });
+});
 //--------------------------------------------------
 app.all("*", (req, res, next) => {
   res.status(404).json({
