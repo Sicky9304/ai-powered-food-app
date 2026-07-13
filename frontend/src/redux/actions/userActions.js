@@ -26,6 +26,9 @@ export const login = (email, password) => async (dispatch) => {
       email,
       password,
     });
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
     dispatch(loginSuccess(data.data.user));
     dispatch(fetchCartItems());
   } catch (error) {
@@ -41,6 +44,9 @@ export const register = (userData) => async (dispatch) => {
     const { data } = await api.post("/v1/users/signup", userData, {
       headers: { "Content-Type": "application/json" },
     });
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+    }
     dispatch(loginSuccess(data.data.user));
     dispatch(fetchCartItems());
   } catch (error) {
@@ -58,6 +64,7 @@ export const loadUser = () => async (dispatch) => {
     dispatch(loginSuccess(data.user));
     dispatch(fetchCartItems());
   } catch (error) {
+    localStorage.removeItem("token");
     dispatch(loadUserFail(error.response?.data?.message));
   }
 };
@@ -81,9 +88,11 @@ export const updateProfile = (userData) => async (dispatch) => {
 export const logout = () => async (dispatch) => {
   try {
     await api.get("/v1/users/logout");
+    localStorage.removeItem("token");
     dispatch(logoutSuccess());
     dispatch(clearCart());
   } catch (error) {
+    localStorage.removeItem("token");
     dispatch(logoutFail(error.response?.data?.message));
   }
 };

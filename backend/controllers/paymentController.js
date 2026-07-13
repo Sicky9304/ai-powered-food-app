@@ -3,14 +3,17 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./config/config.env" });
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Coupon = require("../models/couponModel");
 
 exports.processPayment = catchAsyncErrors(async (req, res, next) => {
-  const session = await stripe.checkout.sessions.create({
+  const { items, restaurant, couponCode } = req.body;
+
+  const sessionParams = {
     customer_email: req.user.email,
     phone_number_collection: {
       enabled: true,
     },
-    line_items: req.body.items.map((item) => {
+    line_items: items.map((item) => {
       const lineItem = {
         price_data: {
           currency: "inr",
@@ -66,22 +69,23 @@ exports.processPayment = catchAsyncErrors(async (req, res, next) => {
     ],
     success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/cart`,
-  });
+  };
+
+  if (couponCode) {
+    const coupon = await Coupon.findOne({ couponName: couponCode.toUpperCase() });
+    if (coupon && coupon.expire > Date.now()) {
+      // Create a temporary Stripe coupon for the session
+      const stripeCoupon = await stripe.coupons.create({
+        percent_off: coupon.discount,
+        duration: "once",
+      });
+      sessionParams.discounts = [{ coupon: stripeCoupon.id }];
+    }
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
   res.status(200).json({ url: session.url });
 });
-
-// exports.paymentDetails = catchAsyncErrors(async (req, res, next) => {
-//   const session = await stripe.checkout.sessions.retrieve(
-//     "cs_test_b1wjqczdc5wwaNj5FjvxipLWeKZIvZQvsbC2OjfC5FEZw5vJ8aJbdMPRYC",
-//     {
-//       expand: ["customer"],
-//     }
-//   );
-// console.log(session);
-//   res.json({
-//     session,
-//   });
-// });
 
 // Send stripe API Key   =>   /api/v1/stripeapi
 exports.sendStripApi = catchAsyncErrors(async (req, res, next) => {

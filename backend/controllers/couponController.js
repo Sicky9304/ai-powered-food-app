@@ -47,7 +47,16 @@ exports.deleteCoupon = catchAsync(async (req, res, next) => {
 exports.couponValidate = catchAsync(async (req, res, next) => {
   const { couponCode, cartItemsTotalAmount } = req.body;
 
+  if (!couponCode) {
+    return next(new ErrorHandler("Please provide a coupon code.", 400));
+  }
+
   const coupon = await Coupon.aggregate([
+    {
+      $match: {
+        couponName: couponCode.toUpperCase(),
+      },
+    },
     {
       $addFields: {
         finalTotal: {
@@ -101,18 +110,20 @@ exports.couponValidate = catchAsync(async (req, res, next) => {
         couponName: 1,
         details: 1,
         minAmount: 1,
+        discount: 1,
+        maxDiscount: 1,
         finalTotal: 1,
         message: 1,
       },
     },
   ]);
 
-  if (!coupon) {
+  if (!coupon || coupon.length === 0) {
     return next(new ErrorHandler("Invalid coupon code.", 404));
   }
 
   res.status(200).json({
     status: "success",
-    data: coupon,
+    data: coupon[0],
   });
 });

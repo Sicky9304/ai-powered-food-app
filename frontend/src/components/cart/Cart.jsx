@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -11,6 +11,7 @@ import { faIndianRupee } from "@fortawesome/free-solid-svg-icons";
 import { payment } from "../../redux/actions/orderActions";
 import { toast } from "react-toastify"; 
 import { clearErrors } from "../../redux/slices/orderSlice";
+import api from "../../utils/api";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -19,9 +20,26 @@ const Cart = () => {
   const { cartItems, restaurant } = useSelector((state) => state.cart);
   const { error: orderError } = useSelector((state) => state.order);
 
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [showCouponWindow, setShowCouponWindow] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+
   useEffect(() => {
     dispatch(fetchCartItems());
   }, [dispatch]);
+
+  useEffect(() => {
+    const getCoupons = async () => {
+      try {
+        const { data } = await api.get("/v1/coupon");
+        setAvailableCoupons(data.data || []);
+      } catch (err) {
+        console.error("Failed to load coupons", err);
+      }
+    };
+    getCoupons();
+  }, []);
 
   useEffect(() => {
     if (orderError) {
@@ -53,10 +71,56 @@ const Cart = () => {
     }
   };
 
-  const checkoutHandler = () => {
-    dispatch(payment(cartItems, restaurant));
-    // // navigate("/delivery");
+  const handleApplyCoupon = async (code) => {
+    if (!code || code.trim() === "") {
+      toast.error("Please enter a coupon code");
+      return;
+    }
+
+    try {
+      const subtotalPrice = cartItems.reduce(
+        (acc, item) => acc + item.quantity * item.foodItem.price,
+        0
+      );
+
+      const { data } = await api.post("/v1/coupon/validate", {
+        couponCode: code.toUpperCase(),
+        cartItemsTotalAmount: subtotalPrice,
+      });
+
+      const validatedCoupon = data.data;
+
+      if (validatedCoupon.message) {
+        // Condition not met (e.g. min amount not reached)
+        toast.warning(validatedCoupon.message);
+      } else {
+        setAppliedCoupon(validatedCoupon);
+        toast.success(`Coupon ${validatedCoupon.couponName} applied successfully!`);
+        setShowCouponWindow(false);
+        setCouponInput("");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Invalid coupon code");
+    }
   };
+
+  const checkoutHandler = () => {
+    dispatch(payment(cartItems, restaurant, appliedCoupon?.couponName));
+  };
+
+  const subtotalPrice = cartItems.reduce(
+    (acc, item) => acc + item.quantity * item.foodItem.price,
+    0
+  );
+
+  const discountAmount = appliedCoupon
+    ? Math.min(
+        (subtotalPrice * appliedCoupon.discount) / 100,
+        appliedCoupon.maxDiscount || Infinity
+      )
+    : 0;
+
+  const finalTotal = subtotalPrice - discountAmount;
 
   return (
     <>
@@ -160,30 +224,105 @@ const Cart = () => {
                   </span>
                 </p>
 
+                {appliedCoupon && (
+                  <p>
+                    Discount ({appliedCoupon.couponName}):
+                    <span className="order-summary-values text-success">
+                      -<FontAwesomeIcon icon={faIndianRupee} size="xs" />
+                      {discountAmount.toFixed(2)}
+                    </span>
+                  </p>
+                )}
+
                 <p>
                   Total:
                   <span className="order-summary-values">
                     <FontAwesomeIcon icon={faIndianRupee} size="xs" />
-                    {cartItems
-                      .reduce(
-                        (acc, item) =>
-                          acc + item.quantity * item.foodItem.price,
-                        0
-                      )
-                      .toFixed(2)}
+                    {finalTotal.toFixed(2)}
                   </span>
                 </p>
 
                 <hr />
 
                 <button
+                  className="coupon-button"
+                  onClick={() => setShowCouponWindow(true)}
+                >
+                  {appliedCoupon ? `Coupon Applied: ${appliedCoupon.couponName}` : "Apply Coupon"}
+                </button>
+
+                {appliedCoupon && (
+                  <button
+                    className="btn btn-sm btn-outline-danger mt-2 btn-block"
+                    onClick={() => setAppliedCoupon(null)}
+                  >
+                    Remove Coupon
+                  </button>
+                )}
+
+                <button
                   id="checkout_btn"
-                  className="btn btn-primary btn-block"
+                  className="btn btn-primary btn-block mt-3"
                   onClick={checkoutHandler}
                 >
                   Check Out
                 </button>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showCouponWindow && (
+        <>
+          <div className="overlay" onClick={() => setShowCouponWindow(false)}></div>
+          <div className="coupon-window">
+            <div className="coupon-header">
+              <h4 className="mb-0">Available Coupons</h4>
+              <span className="close-icon" onClick={() => setShowCouponWindow(false)}>
+                &times;
+              </span>
+            </div>
+            <div className="coupon-content" style={{ overflowY: "auto", height: "calc(100% - 70px)" }}>
+              <div className="coupon-input-group mb-3 d-flex">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter coupon code"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary ml-2"
+                  onClick={() => handleApplyCoupon(couponInput)}
+                >
+                  Apply
+                </button>
+              </div>
+              <hr />
+              {availableCoupons.length === 0 ? (
+                <p className="text-muted text-center mt-4">No coupons available right now.</p>
+              ) : (
+                availableCoupons.map((coupon) => (
+                  <div
+                    key={coupon._id}
+                    className="coupon-item p-3 border mb-2 rounded"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => handleApplyCoupon(coupon.couponName)}
+                  >
+                    <div className="d-flex justify-content-between align-items-center">
+                      <strong className="text-primary">{coupon.couponName}</strong>
+                      <span className="badge badge-success">{coupon.discount}% OFF</span>
+                    </div>
+                    <p className="mb-1 mt-1 text-muted" style={{ fontSize: "14px" }}>{coupon.subTitle}</p>
+                    <small className="text-secondary d-block">{coupon.details}</small>
+                    <small className="text-secondary d-block">
+                      Min Order: ₹{coupon.minAmount}
+                      {coupon.maxDiscount ? ` | Max Discount: ₹${coupon.maxDiscount}` : ""}
+                    </small>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </>
