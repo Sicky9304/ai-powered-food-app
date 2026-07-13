@@ -21,7 +21,7 @@ app.use(
       const allowedOrigins = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://ai-powered-food-3y4b8jc6y-sicky-kumars-projects.vercel.app"
+        "https://ai-powered-food-app.vercel.app"
       ];
 
       const cleanOrigin = origin.replace(/\/$/, "");
