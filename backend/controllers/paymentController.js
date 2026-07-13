@@ -8,6 +8,10 @@ const Coupon = require("../models/couponModel");
 exports.processPayment = catchAsyncErrors(async (req, res, next) => {
   const { items, restaurant, couponCode } = req.body;
 
+  // Dynamically resolve the frontend origin from the incoming request
+  // so that Stripe redirects to the correct domain (Vercel or localhost)
+  const frontendOrigin = (req.headers.origin || process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+
   const sessionParams = {
     customer_email: req.user.email,
     phone_number_collection: {
@@ -67,8 +71,8 @@ exports.processPayment = catchAsyncErrors(async (req, res, next) => {
         },
       },
     ],
-    success_url: `${process.env.FRONTEND_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.FRONTEND_URL}/cart`,
+    success_url: `${frontendOrigin}/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${frontendOrigin}/cart`,
   };
 
   if (couponCode) {
