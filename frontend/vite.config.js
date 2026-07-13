@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         // target: "https://internship-b7.onrender.com",
-        target: "http://localhost:8080",
+        target: "https://ai-powered-food-app.onrender.com",
         changeOrigin: true,
         secure: false,
       },
