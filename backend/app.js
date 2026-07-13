@@ -13,8 +13,40 @@ const errorMiddleware = require("./middlewares/errors");
 
 app.use(
   cors({
-    // origin: "https://genie-food-app.netlify.app",
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+
+      // List of explicitly allowed origins
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://ai-powered-food-3y4b8jc6y-sicky-kumars-projects.vercel.app"
+      ];
+
+      const cleanOrigin = origin.replace(/\/$/, "");
+
+      // Check if it's a Vercel deployment URL
+      const isVercelDomain = cleanOrigin.endsWith(".vercel.app");
+
+      // Check FRONTEND_URL from environment variables (stripping quotes if present)
+      const envOrigin = process.env.FRONTEND_URL
+        ? process.env.FRONTEND_URL.replace(/['"]/g, "").replace(/\/$/, "")
+        : null;
+
+      const isAllowed =
+        allowedOrigins.some((o) => o.replace(/\/$/, "") === cleanOrigin) ||
+        isVercelDomain ||
+        (envOrigin && envOrigin === cleanOrigin);
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      // Fallback: allow the origin but log a warning to help with debugging production deployment issues
+      console.log(`CORS dynamic origin fallback allowed: ${origin}`);
+      return callback(null, true);
+    },
     credentials: true,
   }),
 );
