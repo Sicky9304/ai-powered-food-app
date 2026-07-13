@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Environment files and credentials
+*.env
+config.env
+**/config.env
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor configurations and IDE metadata
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Lock files and local logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+.gemini/
+antigravity-ide/
